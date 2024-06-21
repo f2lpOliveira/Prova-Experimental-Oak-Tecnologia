@@ -1,29 +1,42 @@
 package crprodutos
 
+import grails.gorm.transactions.Transactional
+
 class ProdutoController {
 
     def index() {
-        redirect(action: "lista")
+        redirect(action: "list")
     }
 
-    def listar() {
-        def produtos = Produtos.listar()
+    def list() {
+        def produtos = Produto.list(sort: "valor", order: "asc")
         [produtos: produtos]
     }
 
-    def criar() {
-        [produtosInstancia: new Produtos(params)]
+    def create() {
+        [produtoInstancia: new Produto(params)]
     }
 
-    def salvar() {
-        def produtosInstancia = new Produtos(params)
-        if (produtosInstancia.salvar(flush: true)) {
-            flash.message = "Produtos ${produtosInstancia.nome} criado com sucesso!"
-            redirect(action: "listar")
-        } else {
+    @Transactional
+    def save() {
+        def produtoInstancia = new Produto(params)
+
+        try {
+            if (produtoInstancia.save(flush: true)) {
+                flash.message = "Produto ${produtoInstancia.nome} cadastrado com sucesso"
+                redirect(action: "list")
+            } else {
+                render(
+                        view: "create",
+                        model: [produtoInstancia: produtoInstancia]
+                )
+            }
+        } catch (Exception e) {
+            log.error("Erro ao salvar o produto: ${e.message}")
+            flash.message = "Erro ao salvar o produto: ${e.message}"
             render(
-                    view: "criar",
-                    model: [produtosInstancia: produtosInstancia]
+                    view: "create",
+                    model: [produtoInstancia: produtoInstancia]
             )
         }
     }
